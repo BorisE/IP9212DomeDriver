@@ -126,6 +126,10 @@ namespace ASCOM.IP9212_rolloffroof3
         /// </summary>
         internal TraceLogger tl;
 
+
+        internal string TelescopeDriverId = "EQMOD_SIM.Telescope";
+        internal SafetyCheck objSafetyCheck;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IP9212_rolloffroof3"/> class.
         /// Must be public for COM registration.
@@ -139,6 +143,7 @@ namespace ASCOM.IP9212_rolloffroof3
             #endif
 
             Hardware = new IP9212_switch_class(this);
+            objSafetyCheck = new SafetyCheck(TelescopeDriverId, this);
 
             ReadProfile(); // Read device configuration from the ASCOM Profile store
 
@@ -534,17 +539,26 @@ namespace ASCOM.IP9212_rolloffroof3
             //if (!Hardware.closed_shutter_flag && Hardware.opened_shutter_flag)
             if (!Hardware.closed_shutter_flag)
             {
-                //Press switch
-                tl.LogMessage("CloseShutter", "Opened, pressing switch");
-                Hardware.pressRoofSwitch();
 
-                //clear shutter status cache
-                lastShutterStatusCheck = EXPIRED_CACHE;
-                
-                //set moving state
-                Hardware.closed_shutter_flag = false;
-                Hardware.opened_shutter_flag = false;
-                tl.LogMessage("CloseShutter", "Moving was initiated");
+                if (objSafetyCheck.IsSafe())
+                {
+
+                    //Press switch
+                    tl.LogMessage("CloseShutter", "Opened, pressing switch");
+                    Hardware.pressRoofSwitch();
+
+                    //clear shutter status cache
+                    lastShutterStatusCheck = EXPIRED_CACHE;
+
+                    //set moving state
+                    Hardware.closed_shutter_flag = false;
+                    Hardware.opened_shutter_flag = false;
+                    tl.LogMessage("CloseShutter", "Moving was initiated");
+                }
+                else
+                {
+                    tl.LogMessage("CloseShutter", "It is undsafe, cancel close");
+                }
             }
             else if (Hardware.closed_shutter_flag)
             {
