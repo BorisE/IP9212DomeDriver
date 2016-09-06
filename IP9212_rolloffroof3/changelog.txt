@@ -5,6 +5,10 @@ http://astromania.info
 ASCOM Driver for roll-off roof controling by AvioSys IP9212 power server. It receives commands by http protocol commands
 
 Change log
+3.1.0	06-09-2016
+- due to problems, async read was replaced with forced
+- connect pocedure changed (it was a bug?)
+
 3.0.1	20-08-2016
 - cache optimization (auto clear on set operation)
 

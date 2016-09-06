@@ -174,12 +174,12 @@ namespace ASCOM.IP9212_rolloffroof3
             //if current state of connection coincidies with new state then do nothing
             if (hardware_connected_flag)
             {
-                tl.LogMessage("Switch_Connect", "Exit because of no state change");
+                tl.LogMessage("Switch_Connect", "Exit because was already connected");
                 return;
             }
 
             // check (forced) if there is connection with hardware
-            if (IsConnected(true))
+            if (HarwareReachable(true))
             {
                 tl.LogMessage("Switch_Connect", "Connected");
                 return;
@@ -221,7 +221,7 @@ namespace ASCOM.IP9212_rolloffroof3
         /// </summary>
         /// <param name="forcedflag">[bool] if function need to force noncached checking of device availability</param>
         /// <returns>true is available, false otherwise</returns>
-        public bool IsConnected(bool forcedflag = false)
+        public bool HarwareReachable(bool forcedflag = false)
         {
             tl.LogMessage("Switch_IsConnected", "Enter, forced flag=" + forcedflag.ToString());
 
@@ -245,7 +245,7 @@ namespace ASCOM.IP9212_rolloffroof3
 
                 //read
                 //checkLink_async();
-                checkLink_forced();
+                checkLink_forced(); //use forced variant for this build
             }
             else
             {
@@ -261,9 +261,10 @@ namespace ASCOM.IP9212_rolloffroof3
 
         /// <summary>
         /// Check the availability of IP server by starting async read from input sensors. Result handeled to checkLink_DownloadCompleted()
+        /// Not used in this build
         /// </summary>
         /// <returns>Nothing</returns> 
-        public void checkLink_async()
+        public void ______checkLink_async()
         {
             tl.LogMessage("Switch_CheckLink_async", "enter");
 
@@ -740,6 +741,12 @@ namespace ASCOM.IP9212_rolloffroof3
                 //return to normal value
                 tl.LogMessage("Switch_pressRoofSwitch", "first need to return switch to normal state");
                 setOutputStatus(switch_roof_port, int_switch_port_state_type);
+
+                //wait
+                Thread.Sleep(1000);
+
+                //reread output states just for log purpose
+                outStates = getOutputStatus();
             }
 
             //press switch
@@ -748,13 +755,20 @@ namespace ASCOM.IP9212_rolloffroof3
 
             //wait
             Thread.Sleep(1000);
-            Thread.Sleep(1000);
+
+            //read output states just for log purpose
+            outStates = getOutputStatus();
+
+            //wait
             Thread.Sleep(1000);
 
             //release switch
             tl.LogMessage("Switch_pressRoofSwitch", "Releasing");
             setOutputStatus(switch_roof_port, int_switch_port_state_type);
 
+
+            //read output states just for log purpose
+            outStates = getOutputStatus();
 
             tl.LogMessage("Switch_pressRoofSwitch", "Exit");
             return true;

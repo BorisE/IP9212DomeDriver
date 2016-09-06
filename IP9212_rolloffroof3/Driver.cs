@@ -26,7 +26,8 @@
 //                          caching optimization 
 //                          architecture changed
 // 20-08-2016	XXX	3.0.1	caching optimization +minor changes
-//
+// 06-09-2016	XXX	3.1.0	due to problems, async read was replaced with forced
+//                          connect pocedure changed (was bug?)
 #define Dome
 
 using System;
@@ -72,7 +73,7 @@ namespace ASCOM.IP9212_rolloffroof3
         /// </summary>
         private static string driverDescription = "ASCOM Dome driver for roll-off roof controlled by Aviosys IP9212. Written by Boris Emchenko http://astromania.info";
         private static string driverDescriptionShort = "Roll-off roof on IP9212v3";
-        private static string driverVersion = "3.0.1";
+        private static string driverVersion = "3.1.0";
 
         internal static string traceStateProfileName = "Trace Level";
         internal static string traceStateDefault = "true";
@@ -444,8 +445,9 @@ namespace ASCOM.IP9212_rolloffroof3
         {
             get
             {
-                tl.LogMessage("Azimuth Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("Azimuth", false);
+                //tl.LogMessage("Azimuth Get", "Not implemented");
+                //throw new ASCOM.PropertyNotImplementedException("Azimuth", false);
+                return 350.0;
             }
         }
 
@@ -791,8 +793,20 @@ namespace ASCOM.IP9212_rolloffroof3
         private bool IsConnected(bool forcedflag= false)
         {
             tl.LogMessage("IsConnected", "Enter");
-            // Check that the driver hardware connection exists and is connected to the hardware
-            connectedState = Hardware.IsConnected(forcedflag);
+
+            if (connectedState)
+            {
+                //if driver was already connected
+                // Check that the driver hardware connection exists and is connected to the hardware
+                tl.LogMessage("IsConnected", "Was connected, checking hardware");
+                bool HardwareReachableFlag = Hardware.HarwareReachable(forcedflag);
+                connectedState = HardwareReachableFlag;
+            }
+            else
+            {
+                //if driver wasnot connected don't even check
+                tl.LogMessage("IsConnected", "Wasn't yet connected, no hardware check");
+            }
 
             tl.LogMessage("IsConnected", "Exit. Returning status: " + connectedState.ToString());
 
