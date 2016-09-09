@@ -283,5 +283,18 @@ namespace ASCOM.IP9212_rolloffroof3
             dt = dt.AddHours(TimeZone.CurrentTimeZone.GetUtcOffset(dt).Hours);
             return dt;
         }
+
+        private void btnTelescopeChoose_Click(object sender, EventArgs e)
+        {
+            DomeDriverLnk.TelescopeDriverId = ASCOM.DriverAccess.Telescope.Choose(DomeDriverLnk.TelescopeDriverId);
+            txtTelescopeDriverId.Text = DomeDriverLnk.TelescopeDriverId;
+        }
+
+        private void btnTelescopeSetup_Click(object sender, EventArgs e)
+        {
+            driver = new ASCOM.DriverAccess.Dome(DriverId);
+            driver.SetupDialog();
+
+        }
     }
 }
