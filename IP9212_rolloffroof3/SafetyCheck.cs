@@ -180,9 +180,12 @@ namespace ASCOM.IP9212_rolloffroof3
         {
             tl.LogMessage("SafetyCheck_Disconnect", "Enter");
 
-            objTelescopeDriver.Connected = false;
-            objTelescopeDriver.Dispose();
-            objTelescopeDriver = null;
+            if (objTelescopeDriver != null)
+            {
+                objTelescopeDriver.Connected = false;
+                objTelescopeDriver.Dispose();
+                objTelescopeDriver = null;
+            }
 
             tl.LogMessage("SafetyCheck_Disconnect", "Exit");
 

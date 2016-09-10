@@ -28,7 +28,7 @@
 // 20-08-2016	XXX	3.0.1	caching optimization +minor changes
 // 06-09-2016	XXX	3.1.0	due to problems, async read was replaced with forced
 //                          connect pocedure changed (was bug?)
-// 10-09-2016	XXX	3.2.1	check telescope postion
+// 10-09-2016	XXX	3.2.2	check telescope postion
 
 #define Dome
 
@@ -48,11 +48,11 @@ using System.Windows.Forms;
 namespace ASCOM.IP9212_rolloffroof3
 {
     //
-    // Your driver's DeviceID is ASCOM.IP9212_rolloffroof2.Dome
+    // Your driver's DeviceID is ASCOM.IP9212_rolloffroof3.Dome
     //
-    // The Guid attribute sets the CLSID for ASCOM.IP9212_rolloffroof2.Dome
+    // The Guid attribute sets the CLSID for ASCOM.IP9212_rolloffroof3.Dome
     // The ClassInterface/None addribute prevents an empty interface called
-    // _IP9212_rolloffroof2 from being created and used as the [default] interface
+    // _IP9212_rolloffroof3 from being created and used as the [default] interface
     //
     // TODO Replace the not implemented exceptions with code to implement the function or
     // throw the appropriate ASCOM exception.
@@ -61,7 +61,8 @@ namespace ASCOM.IP9212_rolloffroof3
     /// <summary>
     /// ASCOM Dome Driver for IP9212_rolloffroof3.
     /// </summary>
-    [Guid("C9ACEBB9-0391-4EB6-9D15-5483FDE4F205")]
+    //[Guid("C9ACEBB9-0391-4EB6-9D15-5483FDE4F205")] //classic 05FE1498-3E5E-40ED-8256-F23ED2F06EB2
+    [Guid("050A684B-AC4F-4CCA-BF43-561AA2D2AB4E")] //alt 8CA8F3A3-98C9-4947-94B7-DD4B9CC7A519
     [ClassInterface(ClassInterfaceType.None)]
     public class Dome : IDomeV2
     {
@@ -75,7 +76,7 @@ namespace ASCOM.IP9212_rolloffroof3
         /// </summary>
         private static string driverDescription = "ASCOM Dome driver for roll-off roof controlled by Aviosys IP9212. Written by Boris Emchenko http://astromania.info";
         private static string driverDescriptionShort = "Roll-off roof on IP9212v3";
-        private static string driverVersion = "3.2.1";
+        private static string driverVersion = "3.2.2";
 
         internal static string traceStateProfileName = "Trace Level";
         internal static string traceStateDefault = "true";
@@ -137,7 +138,7 @@ namespace ASCOM.IP9212_rolloffroof3
         /// </summary>
         public Dome()
         {
-            tl = new TraceLogger("", "IP9212_rolloffroof2");
+            tl = new TraceLogger("", "IP9212_rolloffroof3");
             #if DEBUG
             tl.Enabled = true; //at least for debugging - log will be always created no matter the value of traceState
             tl.LogMessage("Dome", "Init traceloger (debug mode)");
@@ -299,10 +300,6 @@ namespace ASCOM.IP9212_rolloffroof3
 
         public void Dispose()
         {
-            // Clean up the tracelogger and util objects
-            tl.Enabled = false;
-            tl.Dispose();
-            tl = null;
             //utilities.Dispose();
             //utilities = null;
             //astroUtilities.Dispose();
@@ -313,6 +310,10 @@ namespace ASCOM.IP9212_rolloffroof3
             objSafetyCheck.Dispose();
             objSafetyCheck = null;
 
+            // Clean up the tracelogger
+            tl.Enabled = false;
+            tl.Dispose();
+            tl = null;
         }
 
         public bool Connected

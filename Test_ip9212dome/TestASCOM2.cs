@@ -44,14 +44,13 @@ namespace ASCOM.IP9212_rolloffroof2
             driver = new ASCOM.DriverAccess.Dome(DriverId);
             if (buttonConnect.Text == "Connect")
             {
+                txtDeviceAddr.Text = driver.Action("IPAddress", "");
+
                 driver.Connected = true;
                 timer1.Enabled = true;
                 buttonOpenShutter.Enabled = true;
                 buttonCloseShutter.Enabled = true;
                 buttonConnect.Text = "Disconnect";
-
-
-                txtDeviceAddr.Text = driver.Action("IPAddress", "");
             }
             else
             {

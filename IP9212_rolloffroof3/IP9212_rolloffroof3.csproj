@@ -58,7 +58,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RegisterForComInterop>true</RegisterForComInterop>
     <Prefer32Bit>false</Prefer32Bit>
-    <DocumentationFile>bin\Release\ASCOM.IP9212_rolloffroof3.Dome.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\ASCOM.IP9212_rolloffroof3.Dome.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ASCOM.DeviceInterfaces, Version=6.0.0.0, Culture=neutral, PublicKeyToken=565de7938946fba7, processorArchitecture=MSIL" />
