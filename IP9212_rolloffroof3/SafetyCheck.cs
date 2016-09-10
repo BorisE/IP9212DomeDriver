@@ -26,18 +26,18 @@ namespace ASCOM.IP9212_rolloffroof3
         internal static string SafetyCheck_PositionFlag_profilename = "SafetyCheckEnable";
         internal static string SafetyCheck_PositionFlag_default = "false";
 
-        public static double SafetyCheck_Azimuth_min = 0.1;
+        public static double SafetyCheck_Azimuth_min = 0.0;
         internal static string SafetyCheck_Azimuth_min_profilename = "SafetyCheck_Azimuth_min";
-        internal static string SafetyCheck_Azimuth_min_default = "0.1";
-        public static double SafetyCheck_Azimuth_max = 10.1;
+        internal static string SafetyCheck_Azimuth_min_default = "0";
+        public static double SafetyCheck_Azimuth_max = 10.0;
         internal static string SafetyCheck_Azimuth_max_profilename = "SafetyCheck_Azimuth_max";
-        internal static string SafetyCheck_Azimuth_max_default = "10.1";
+        internal static string SafetyCheck_Azimuth_max_default = "10";
         public static double SafetyCheck_Altitude_min = -20.0;
         internal static string SafetyCheck_Altitude_min_profilename = "SafetyCheck_Altitude_min";
-        internal static string SafetyCheck_Altitude_min_default = "-20.0";
+        internal static string SafetyCheck_Altitude_min_default = "-20";
         public static double SafetyCheck_Altitude_max = 5.0;
         internal static string SafetyCheck_Altitude_max_profilename = "SafetyCheck_Altitude_max";
-        internal static string SafetyCheck_Altitude_max_default = "5.0";
+        internal static string SafetyCheck_Altitude_max_default = "5";
 
         #endregion Settings variables
 

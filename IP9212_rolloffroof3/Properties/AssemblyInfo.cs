@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("astromania.info")]
 [assembly: AssemblyProduct("ASCOM Dome driver for rolloffroof on IP9212")]
-[assembly: AssemblyCopyright("Copyright © 2013 by Boris Emchenko http://astromania.info")]
+[assembly: AssemblyCopyright("Copyright © 2013-2016 by Boris Emchenko http://astromania.info")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -22,7 +22,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(true)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("8CA8F3A3-98C9-4947-94B7-DD4B9CC7A519")]
+[assembly: Guid("05FE1498-3E5E-40ED-8256-F23ED2F06EB2")]
 
 // Version information for an assembly consists of the following four values:
 //
