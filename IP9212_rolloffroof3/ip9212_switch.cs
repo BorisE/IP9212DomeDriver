@@ -145,7 +145,7 @@ namespace ASCOM.IP9212_rolloffroof3
         {
             DomeDriverLnk = DomeDriver_ext;
 
-            tl = DomeDriverLnk.tl; //the same logger with Dome Driver
+            tl = Dome.tl; //the same logger with Dome Driver
 
             //tl.Enabled = true; //default value before reading settings
 

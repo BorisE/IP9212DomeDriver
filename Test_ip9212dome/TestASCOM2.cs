@@ -17,6 +17,11 @@ namespace ASCOM.IP9212_rolloffroof2
 
         private ASCOM.DriverAccess.Dome driver;
 
+
+        private Int32 caretPos = 0;
+        public Int32 MAX_LOG_LINES = 500;
+
+
         public TestASCOM2()
         {
             InitializeComponent();
@@ -44,6 +49,9 @@ namespace ASCOM.IP9212_rolloffroof2
                 buttonOpenShutter.Enabled = true;
                 buttonCloseShutter.Enabled = true;
                 buttonConnect.Text = "Disconnect";
+
+
+                txtDeviceAddr.Text = driver.Action("IPAddress", "");
             }
             else
             {
@@ -66,15 +74,28 @@ namespace ASCOM.IP9212_rolloffroof2
             driver.CloseShutter();
         }
 
+
+
         private void timer1_Tick(object sender, EventArgs e)
         {
             txtShutterStatus.Text=driver.ShutterStatus.ToString();
-            txtLog.AppendText(DateTime.Now.ToString("HH:mm:ss.f") + " : " + txtShutterStatus.Text+"\n");
+            string LogText = DateTime.Now.ToString("HH:mm:ss.f") + " : " + txtShutterStatus.Text + Environment.NewLine;
+            caretPos = txtLog.SelectionStart;
+            txtLog.AppendText(LogText);
+
+            //Cut log window contents if it is greater then MAX_LOG_LINES
+            var txtLogLinesArr = txtLog.Lines;
+            if (txtLogLinesArr.Count() > MAX_LOG_LINES)
+            {
+                int NumOfSkipLines = txtLogLinesArr.Count() - MAX_LOG_LINES;
+                var newLines = txtLogLinesArr.Skip(NumOfSkipLines);
+                txtLog.Lines = newLines.ToArray();
+            }
         }
 
         private void button1_Click_1(object sender, EventArgs e)
         {
-            driver = new ASCOM.DriverAccess.Dome(DriverId);
+            if (driver==null) driver = new ASCOM.DriverAccess.Dome(DriverId);
             driver.SetupDialog();
         }
     }

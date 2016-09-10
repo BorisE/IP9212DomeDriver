@@ -65,7 +65,6 @@ namespace ASCOM.IP9212_rolloffroof3
             cmbLang.SelectedValue = IP9212_switch_class.currentLang;
 
             
-
             opened_port.Text = IP9212_switch_class.opened_sensor_port.ToString();
             opened_port_state_type.Checked = IP9212_switch_class.opened_port_state_type;
 
@@ -76,6 +75,17 @@ namespace ASCOM.IP9212_rolloffroof3
             switch_port_type.Checked = IP9212_switch_class.switch_port_state_type;
 
             chkTrace.Checked = Dome.traceState;
+
+            //Safety Check
+            txtTelescopeDriverId.Text = SafetyCheck.TelescopeDriverId;
+            chkSafetyCheck_Parked.Checked = SafetyCheck.SafetyCheck_ParkedFlag;
+            chkSafetyCheck_Position.Checked = SafetyCheck.SafetyCheck_PositionFlag;
+            txtAzMin.Text = SafetyCheck.SafetyCheck_Azimuth_min.ToString();
+            txtAzMax.Text = SafetyCheck.SafetyCheck_Azimuth_max.ToString();
+            txtAltMin.Text = SafetyCheck.SafetyCheck_Altitude_min.ToString();
+            txtAltMax.Text = SafetyCheck.SafetyCheck_Altitude_max.ToString();
+
+            chkSafetyCheck_CheckedChanged(null, null);
         }
 
 
@@ -125,50 +135,48 @@ namespace ASCOM.IP9212_rolloffroof3
             IP9212_switch_class.switch_port_state_type = switch_port_type.Checked;
             #endregion
 
-            //Advanced settings
-            #region Advanced settings
+            //SaftyCheck settings
+            #region Safety Check
+            SafetyCheck.TelescopeDriverId = txtTelescopeDriverId.Text;
 
-            IP9212_switch_class.traceState = chkTrace.Checked;
-
-            try
-            {
-                MyWebClient.NETWORK_TIMEOUT = Convert.ToInt32(txtNetworkTimeout.Text) * 1000;
-            }
-            catch (Exception e)
-            {
-                MyWebClient.NETWORK_TIMEOUT = MyWebClient.NETWORK_TIMEOUT_default;
-                IP9212_switch_class.tl.LogMessage("SetupDialog_cmdOK", "Input string [NetworkTimeout] is not a sequence of digits [" + e.Message + "]");
-            }
-            IP9212_switch_class.Semaphore_timeout = MyWebClient.NETWORK_TIMEOUT+ IP9212_switch_class.Semaphore_timeout_extratime;
+            SafetyCheck.SafetyCheck_ParkedFlag = chkSafetyCheck_Parked.Checked;
+            SafetyCheck.SafetyCheck_PositionFlag = chkSafetyCheck_Position.Checked;
 
             try
             {
-                IP9212_switch_class.CACHE_CHECKCONNECTED_INTERVAL = Convert.ToUInt32(txtCacheConnect.Text);
+                SafetyCheck.SafetyCheck_Altitude_min = Convert.ToDouble(txtAltMin.Text); 
             }
             catch (Exception e)
             {
-                IP9212_switch_class.CACHE_CHECKCONNECTED_INTERVAL = IP9212_switch_class.CACHE_CHECKCONNECTED_INTERVAL_default;
-                IP9212_switch_class.tl.LogMessage("SetupDialog_cmdOK", "Input string [CACHE_CHECKCONNECTED_INTERVAL] is not a sequence of digits [" + e.Message + "]");
+                SafetyCheck.SafetyCheck_Altitude_min = Convert.ToDouble(SafetyCheck.SafetyCheck_Altitude_min_default);
+                Dome.tl.LogMessage("SetupDialog_cmdOK", "Input string [SafetyCheck_Altitude_min] has wrong format. May be decimal point? [" + e.Message + "]");
             }
-
             try
             {
-                IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_NORMAL = Convert.ToUInt32(txtCacheRead.Text);
+                SafetyCheck.SafetyCheck_Altitude_max = Convert.ToDouble(txtAltMax.Text);
             }
             catch (Exception e)
             {
-                IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_NORMAL = IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_NORMAL_default;
-                IP9212_switch_class.tl.LogMessage("SetupDialog_cmdOK", "Input string [CACHE_SHUTTERSTATUS_INTERVAL_NORMAL] is not a sequence of digits [" + e.Message + "]");
+                SafetyCheck.SafetyCheck_Altitude_max = Convert.ToDouble(SafetyCheck.SafetyCheck_Altitude_max_default);
+                Dome.tl.LogMessage("SetupDialog_cmdOK", "Input string [SafetyCheck_Altitude_max] has wrong format. May be decimal point? [" + e.Message + "]");
             }
-
             try
             {
-                IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_REDUCED = Convert.ToUInt32(txtCacheReadReduced.Text);
+                SafetyCheck.SafetyCheck_Azimuth_max = Convert.ToDouble(txtAzMax.Text);
             }
             catch (Exception e)
             {
-                IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_REDUCED = IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_REDUCED_default;
-                IP9212_switch_class.tl.LogMessage("SetupDialog_cmdOK", "Input string [CACHE_SHUTTERSTATUS_INTERVAL_REDUCED] is not a sequence of digits [" + e.Message + "]");
+                SafetyCheck.SafetyCheck_Azimuth_max = Convert.ToDouble(SafetyCheck.SafetyCheck_Azimuth_max_default);
+                Dome.tl.LogMessage("SetupDialog_cmdOK", "Input string [SafetyCheck_Azimuth_max] has wrong format. May be decimal point? [" + e.Message + "]");
+            }
+            try
+            {
+                SafetyCheck.SafetyCheck_Azimuth_min = Convert.ToDouble(txtAzMin.Text);
+            }
+            catch (Exception e)
+            {
+                SafetyCheck.SafetyCheck_Azimuth_min = Convert.ToDouble(SafetyCheck.SafetyCheck_Azimuth_min_default);
+                Dome.tl.LogMessage("SetupDialog_cmdOK", "Input string [SafetyCheck_Azimuth_min] has wrong format. May be decimal point? [" + e.Message + "]");
             }
             #endregion
 
@@ -298,6 +306,34 @@ namespace ASCOM.IP9212_rolloffroof3
             }
             DomeDriverLnk.objSafetyCheck.objTelescopeDriver.SetupDialog();
 
+        }
+
+        private void btnTelescopeConnect_Click(object sender, EventArgs e)
+        {
+            if (DomeDriverLnk.objSafetyCheck.objTelescopeDriver == null)
+            {
+                DomeDriverLnk.objSafetyCheck.objTelescopeDriver = new ASCOM.DriverAccess.Telescope(SafetyCheck.TelescopeDriverId);
+            }
+
+            DomeDriverLnk.objSafetyCheck.objTelescopeDriver.Connected = (btnTelescopeConnect.Text == "Connect" ? true: false);
+            btnTelescopeConnect.Text = (btnTelescopeConnect.Text == "Connect" ? "Disconnect": "Connect");
+
+        }
+
+        private void chkSafetyCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkSafetyCheck_Parked.Checked || chkSafetyCheck_Position.Checked)
+            {
+                btnTelescopeChoose.Enabled = true;
+                btnTelescopeSetup.Enabled = true;
+                btnTelescopeConnect.Enabled = true;
+            }
+            else
+            {
+                btnTelescopeChoose.Enabled = false;
+                btnTelescopeSetup.Enabled = false;
+                btnTelescopeConnect.Enabled = false;
+            }
         }
     }
 }

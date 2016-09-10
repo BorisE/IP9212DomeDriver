@@ -28,6 +28,8 @@
 // 20-08-2016	XXX	3.0.1	caching optimization +minor changes
 // 06-09-2016	XXX	3.1.0	due to problems, async read was replaced with forced
 //                          connect pocedure changed (was bug?)
+// 10-09-2016	XXX	3.2.1	check telescope postion
+
 #define Dome
 
 using System;
@@ -41,7 +43,7 @@ using ASCOM.Utilities;
 using ASCOM.DeviceInterface;
 using System.Globalization;
 using System.Collections;
-
+using System.Windows.Forms;
 
 namespace ASCOM.IP9212_rolloffroof3
 {
@@ -73,7 +75,7 @@ namespace ASCOM.IP9212_rolloffroof3
         /// </summary>
         private static string driverDescription = "ASCOM Dome driver for roll-off roof controlled by Aviosys IP9212. Written by Boris Emchenko http://astromania.info";
         private static string driverDescriptionShort = "Roll-off roof on IP9212v3";
-        private static string driverVersion = "3.2.0";
+        private static string driverVersion = "3.2.1";
 
         internal static string traceStateProfileName = "Trace Level";
         internal static string traceStateDefault = "true";
@@ -124,7 +126,7 @@ namespace ASCOM.IP9212_rolloffroof3
         /// <summary>
         /// Private variable to hold the trace logger object (creates a diagnostic log file with information that you specify)
         /// </summary>
-        internal TraceLogger tl;
+        internal static TraceLogger tl;
 
 
         internal SafetyCheck objSafetyCheck;
@@ -164,7 +166,7 @@ namespace ASCOM.IP9212_rolloffroof3
         // PUBLIC COM INTERFACE IDomeV2 IMPLEMENTATION
         //
 
-        #region Common properties and methods.
+        #region Common properties and methods (SetupDialog / SupportedActions / Action / CommandBlind / CommandBool / CommandString / Dispose  / Connected / Description / DriverInfo / DriverVersion / InterfaceVersion / Name)
 
         /// <summary>
         /// Displays the Setup Dialog form.
@@ -206,7 +208,7 @@ namespace ASCOM.IP9212_rolloffroof3
             get
             {
                 tl.LogMessage("SupportedActions Get", "Returning empty arraylist");
-                return new ArrayList() { "IPAddress", "GetCacheParameter", "GetTimeout" };
+                return new ArrayList() { "IPAddress", "GetCacheParameter", "GetTimeout" , "GetSafetyCheck"};
             }
         }
 
@@ -234,13 +236,31 @@ namespace ASCOM.IP9212_rolloffroof3
                 }
                 else
                 {
-                    return "";
+                    //default parameter
+                    return IP9212_switch_class.CACHE_CHECKCONNECTED_INTERVAL.ToString();
                 }
             }
             // Get web timeout settings
             else if (actionName == "GetTimeout")
             {
                 return MyWebClient.NETWORK_TIMEOUT.ToString();
+            }
+            // Get safety check
+            else if (actionName == "GetSafetyCheck")
+            {
+                if (actionParameters == "SafetyCheckFlag")
+                {
+                    return SafetyCheck.SafetyCheck_ParkedFlag.ToString();
+                }
+                else if (actionParameters == "SafetyCheck_TelescopeDriver")
+                {
+                    return SafetyCheck.TelescopeDriverId;
+                }
+                else
+                {
+                    //default parameter
+                    return SafetyCheck.SafetyCheck_ParkedFlag.ToString();
+                }
             }
             else
             {
@@ -290,6 +310,9 @@ namespace ASCOM.IP9212_rolloffroof3
             Hardware.Dispose();
             Hardware = null;
 
+            objSafetyCheck.Dispose();
+            objSafetyCheck = null;
+
         }
 
         public bool Connected
@@ -313,26 +336,31 @@ namespace ASCOM.IP9212_rolloffroof3
                     throw new ASCOM.DriverException(ERROR_MESSAGE);
                 }
 
+                //Check current connection status
                 tl.LogMessage("Connected(Set)", "Check current connection status");
                 bool curState = IsConnected(true);
 
                 if (value && curState)
                 {
+                    //Should connect, but already connected
                     tl.LogMessage("Connected(Set)", "Exit. Already connected");
                     return;
                 }
                 else if (!value && !curState)
                 {
+                    //Should disconnect, but already disconnected
                     tl.LogMessage("Connected(Set)", "Exit. Already disconnected");
                     return;
                 }
                 else
                 {
+                    //Should change connected status, would deal with it further
                     tl.LogMessage("Connected(Set)", "Connection status different, proceeding further");
                 }
 
                 if (value)
                 {
+                    //IF SHOULD CONNECT
                     tl.LogMessage("Connected(Set)", "Connecting to IP9212...");
 
                     Hardware.Connect();
@@ -365,7 +393,7 @@ namespace ASCOM.IP9212_rolloffroof3
                 return driverDescription;
             }
         }
-
+        
         public string DriverInfo
         {
             get
@@ -406,7 +434,6 @@ namespace ASCOM.IP9212_rolloffroof3
                 return driverDescriptionShort;
             }
         }
-
         #endregion
 
         #region IDome Implementation
@@ -539,10 +566,85 @@ namespace ASCOM.IP9212_rolloffroof3
             //if (!Hardware.closed_shutter_flag && Hardware.opened_shutter_flag)
             if (!Hardware.closed_shutter_flag)
             {
+                /////////////////////////////////////////
+                //Check if it is safe to close shutter?
+                bool CloseAllowedFlag = false;
+                bool? SafetyStatusFlag = null;
+                bool? SafetyStatus_Parked_Flag = null;
+                bool? SafetyStatus_PositionAlt_Flag = null;
+                bool? SafetyStatus_PositionAz_Flag = null;
 
-                if (objSafetyCheck.IsSafe())
+                //Start entrenal cycle with safety check 
+                while (SafetyStatusFlag == null)
                 {
+                    //////////////////////////////////////////
+                    //Check if safe: yes (true), no (false), error (null)?
+                    SafetyStatusFlag = objSafetyCheck.IsSafe(out SafetyStatus_Parked_Flag, out SafetyStatus_PositionAlt_Flag, out SafetyStatus_PositionAz_Flag);
 
+                    if (SafetyStatusFlag == true)
+                    {
+                        //it is safe
+                        CloseAllowedFlag = true;
+                        tl.LogMessage("CloseShutter", "Safe check ok, proceeding");
+                    }
+                    else
+                    {
+                        //it is unsafe (or error)
+                        string messagest = "";
+                        if (SafetyStatusFlag == false)
+                        {
+                            if (SafetyStatus_Parked_Flag == false && (SafetyStatus_PositionAlt_Flag == false || SafetyStatus_PositionAz_Flag == false))
+                            {
+                                //Mount is unparked and out of safe postion
+                                messagest = "Mount is unparked and out of safe postion (alt="+ SafetyStatus_PositionAlt_Flag .ToString()+ ",az="+ SafetyStatus_PositionAz_Flag.ToString() + "). It is unsafe to close shutter";
+                                tl.LogMessage("CloseShutter", messagest);
+                            }
+                            else if (SafetyStatus_Parked_Flag == false && (SafetyStatus_PositionAlt_Flag == true && SafetyStatus_PositionAz_Flag == true))
+                            {
+                                //Mount is unparked BUT in safe postions
+                                messagest = "Mount is unparked but in safe postion (alt=" + SafetyStatus_PositionAlt_Flag.ToString() + ",az=" + SafetyStatus_PositionAz_Flag.ToString() + "). It is unsafe to close shutter";
+                                tl.LogMessage("CloseShutter", messagest);
+                            }
+                            else if (SafetyStatus_Parked_Flag == true && (SafetyStatus_PositionAlt_Flag == false || SafetyStatus_PositionAz_Flag == false))
+                            {
+                                //Mount is parked BUT in UNSAFE postion
+                                messagest = "Mount is parked but in UNSAFE postion (alt=" + SafetyStatus_PositionAlt_Flag.ToString() + ",az=" + SafetyStatus_PositionAz_Flag.ToString() + "). It is unsafe to close shutter";
+                                tl.LogMessage("CloseShutter", messagest);
+                            }
+                        }
+                        else if (SafetyStatusFlag == null)
+                        {
+                            //can't connect to mount
+                            messagest = "Can't connect to mount [" + SafetyCheck.TelescopeDriverId + "]. It is unsafe to close shutter. What should we do?";
+                            tl.LogMessage("CloseShutter", "Safe check error");
+                        }
+
+                        //show message and get user choice
+                        var result = MessageBox.Show(messagest+". What should we do?", "Dome close alert", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Exclamation);
+                        if (result == DialogResult.Abort)
+                        {
+                            //abort
+                            CloseAllowedFlag = false;
+                            tl.LogMessage("CloseShutter", "User choice - abort");
+                        }
+                        else if (result == DialogResult.Ignore)
+                        {
+                            //ignore and proceed further
+                            CloseAllowedFlag = true;
+                            tl.LogMessage("CloseShutter", "User choice - ignore");
+                        }
+                        else if (result == DialogResult.Retry)
+                        {
+                            //retry again
+                            tl.LogMessage("CloseShutter", "User choice - retry and check again");
+                            SafetyStatusFlag = null;
+                        }
+                    }
+                }
+
+
+                if (CloseAllowedFlag)
+                { 
                     //Press switch
                     tl.LogMessage("CloseShutter", "Opened, pressing switch");
                     Hardware.pressRoofSwitch();
@@ -1014,16 +1116,6 @@ namespace ASCOM.IP9212_rolloffroof3
                 #region Safety check settings
                 try
                 {
-                    SafetyCheck.SafetyCheckEnabledFlag = Convert.ToBoolean(p.GetValue(driverID, SafetyCheck.SafetyCheckEnabledFlag_profilename, string.Empty, SafetyCheck.SafetyCheckEnabledFlag_default));
-                }
-                catch (Exception e)
-                {
-                    SafetyCheck.SafetyCheckEnabledFlag = Convert.ToBoolean(SafetyCheck.SafetyCheckEnabledFlag_default);
-                    tl.LogMessage("readProfile", "Wrong value for safety check flag: [" + e.Message + "]");
-                }
-
-                try
-                {
                     SafetyCheck.TelescopeDriverId = p.GetValue(driverID, SafetyCheck.TelescopeDriverId_profilename, string.Empty, SafetyCheck.TelescopeDriverId_default);
                 }
                 catch (Exception e)
@@ -1031,6 +1123,61 @@ namespace ASCOM.IP9212_rolloffroof3
                     //p.WriteValue(driverID, ip_login_profilename, ip_login_default);
                     SafetyCheck.TelescopeDriverId = SafetyCheck.TelescopeDriverId_default;
                     tl.LogMessage("readSettings", "Wrong value for safetycheck telescope driverid: [" + e.Message + "]");
+                }
+                try
+                {
+                    SafetyCheck.SafetyCheck_ParkedFlag = Convert.ToBoolean(p.GetValue(driverID, SafetyCheck.SafetyCheck_ParkedFlag_profilename, string.Empty, SafetyCheck.SafetyCheck_ParkedFlag_default));
+                }
+                catch (Exception e)
+                {
+                    SafetyCheck.SafetyCheck_ParkedFlag = Convert.ToBoolean(SafetyCheck.SafetyCheck_ParkedFlag_default);
+                    tl.LogMessage("readProfile", "Wrong value for safety check park flag: [" + e.Message + "]");
+                }
+                try
+                {
+                    SafetyCheck.SafetyCheck_PositionFlag = Convert.ToBoolean(p.GetValue(driverID, SafetyCheck.SafetyCheck_PositionFlag_profilename, string.Empty, SafetyCheck.SafetyCheck_PositionFlag_default));
+                }
+                catch (Exception e)
+                {
+                    SafetyCheck.SafetyCheck_PositionFlag = Convert.ToBoolean(SafetyCheck.SafetyCheck_PositionFlag_default);
+                    tl.LogMessage("readProfile", "Wrong value for safety check postion flag: [" + e.Message + "]");
+                }
+
+                try
+                {
+                    SafetyCheck.SafetyCheck_Azimuth_min = Convert.ToDouble(p.GetValue(driverID, SafetyCheck.SafetyCheck_Azimuth_min_profilename, string.Empty, SafetyCheck.SafetyCheck_Azimuth_min_default));
+                }
+                catch (Exception e)
+                {
+                    SafetyCheck.SafetyCheck_Azimuth_min = Convert.ToDouble(SafetyCheck.SafetyCheck_Azimuth_min_default);
+                    tl.LogMessage("readProfile", "Wrong value for SafetyCheck_Azimuth_min_default: [" + e.Message + "]");
+                }
+                try
+                {
+                    SafetyCheck.SafetyCheck_Azimuth_max = Convert.ToDouble(p.GetValue(driverID, SafetyCheck.SafetyCheck_Azimuth_max_profilename, string.Empty, SafetyCheck.SafetyCheck_Azimuth_max_default));
+                }
+                catch (Exception e)
+                {
+                    SafetyCheck.SafetyCheck_Azimuth_max = Convert.ToDouble(SafetyCheck.SafetyCheck_Azimuth_max_default);
+                    tl.LogMessage("readProfile", "Wrong value for SafetyCheck_Azimuth_max_default: [" + e.Message + "]");
+                }
+                try
+                {
+                    SafetyCheck.SafetyCheck_Altitude_min = Convert.ToDouble(p.GetValue(driverID, SafetyCheck.SafetyCheck_Altitude_min_profilename, string.Empty, SafetyCheck.SafetyCheck_Altitude_min_default));
+                }
+                catch (Exception e)
+                {
+                    SafetyCheck.SafetyCheck_Altitude_min = Convert.ToDouble(SafetyCheck.SafetyCheck_Altitude_min_default);
+                    tl.LogMessage("readProfile", "Wrong value for SafetyCheck_Altitude_min_default: [" + e.Message + "]");
+                }
+                try
+                {
+                    SafetyCheck.SafetyCheck_Altitude_max = Convert.ToDouble(p.GetValue(driverID, SafetyCheck.SafetyCheck_Altitude_max_profilename, string.Empty, SafetyCheck.SafetyCheck_Altitude_max_default));
+                }
+                catch (Exception e)
+                {
+                    SafetyCheck.SafetyCheck_Altitude_max = Convert.ToDouble(SafetyCheck.SafetyCheck_Altitude_max_default);
+                    tl.LogMessage("readProfile", "Wrong value for SafetyCheck_Altitude_max_default: [" + e.Message + "]");
                 }
                 #endregion
 
@@ -1067,6 +1214,14 @@ namespace ASCOM.IP9212_rolloffroof3
                 driverProfile.WriteValue(driverID, IP9212_switch_class.CACHE_CHECKCONNECTED_INTERVAL_profilename, IP9212_switch_class.CACHE_CHECKCONNECTED_INTERVAL.ToString());
                 driverProfile.WriteValue(driverID, IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_NORMAL_profilename, IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_NORMAL.ToString());
                 driverProfile.WriteValue(driverID, IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_REDUCED_profilename, IP9212_switch_class.CACHE_SHUTTERSTATUS_INTERVAL_REDUCED.ToString());
+
+                driverProfile.WriteValue(driverID, SafetyCheck.TelescopeDriverId_profilename, SafetyCheck.TelescopeDriverId);
+                driverProfile.WriteValue(driverID, SafetyCheck.SafetyCheck_ParkedFlag_profilename, SafetyCheck.SafetyCheck_ParkedFlag.ToString());
+                driverProfile.WriteValue(driverID, SafetyCheck.SafetyCheck_PositionFlag_profilename, SafetyCheck.SafetyCheck_PositionFlag.ToString());
+                driverProfile.WriteValue(driverID, SafetyCheck.SafetyCheck_Altitude_min_profilename, SafetyCheck.SafetyCheck_Altitude_min.ToString());
+                driverProfile.WriteValue(driverID, SafetyCheck.SafetyCheck_Altitude_max_profilename, SafetyCheck.SafetyCheck_Altitude_max.ToString());
+                driverProfile.WriteValue(driverID, SafetyCheck.SafetyCheck_Azimuth_min_profilename, SafetyCheck.SafetyCheck_Azimuth_min.ToString());
+                driverProfile.WriteValue(driverID, SafetyCheck.SafetyCheck_Azimuth_max_profilename, SafetyCheck.SafetyCheck_Azimuth_max.ToString());
             }
             tl.LogMessage("Switch_writeSettings", "Exit");
 
