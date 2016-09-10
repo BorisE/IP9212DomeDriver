@@ -8,10 +8,20 @@ namespace ASCOM.IP9212_rolloffroof3
 {
     class SafetyCheck
     {
-        string DriverId = "";
-        private ASCOM.DriverAccess.Telescope driver;
-
+        internal ASCOM.DriverAccess.Telescope objTelescopeDriver;
+        
         private Dome DomeDriverLnk;
+
+        //Settings
+        #region Settings variables
+        public static string TelescopeDriverId = "EQMOD_SIM.Telescope"; //for debug
+        internal static string TelescopeDriverId_profilename = "SafetyCheck_TelescopeDriver";
+        internal static string TelescopeDriverId_default = "";
+
+        public static bool SafetyCheckEnabledFlag = false;
+        internal static string SafetyCheckEnabledFlag_profilename = "SafetyCheckEnable";
+        internal static string SafetyCheckEnabledFlag_default = "false";
+        #endregion Settings variables
 
 
         /// <summary>
@@ -24,9 +34,8 @@ namespace ASCOM.IP9212_rolloffroof3
         /// </summary>
         /// <param name="TelescopeDriverId">Telescope driver id to check</param>
         /// <param name="DomeDriver_ext">Link to parent dome driver</param>
-        public SafetyCheck(string TelescopeDriverId,  Dome DomeDriver_ext)
+        public SafetyCheck(Dome DomeDriver_ext)
         {
-            DriverId = TelescopeDriverId;
             DomeDriverLnk = DomeDriver_ext;
 
             tl = DomeDriverLnk.tl;
@@ -42,7 +51,7 @@ namespace ASCOM.IP9212_rolloffroof3
             {
                 ConnectTelescope();
 
-                if (driver.AtPark)
+                if (objTelescopeDriver.AtPark)
                 {
                     tl.LogMessage("SafetyCheck_IsSafe", "Telesope at park. It is safe");
                     safeFlag = true;
@@ -78,8 +87,8 @@ namespace ASCOM.IP9212_rolloffroof3
         {
             tl.LogMessage("SafetyCheck_ConnectTel", "Enter");
 
-            driver = new ASCOM.DriverAccess.Telescope(DriverId);
-            driver.Connected = true;
+            objTelescopeDriver = new ASCOM.DriverAccess.Telescope(TelescopeDriverId);
+            objTelescopeDriver.Connected = true;
 
             tl.LogMessage("SafetyCheck_ConnectTel", "Exit");
 
@@ -89,9 +98,9 @@ namespace ASCOM.IP9212_rolloffroof3
         {
             tl.LogMessage("SafetyCheck_Disconnect", "Enter");
 
-            driver.Connected = true;
-            driver.Dispose();
-            driver = null;
+            objTelescopeDriver.Connected = true;
+            objTelescopeDriver.Dispose();
+            objTelescopeDriver = null;
 
             tl.LogMessage("SafetyCheck_Disconnect", "Exit");
 

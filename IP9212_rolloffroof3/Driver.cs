@@ -73,7 +73,7 @@ namespace ASCOM.IP9212_rolloffroof3
         /// </summary>
         private static string driverDescription = "ASCOM Dome driver for roll-off roof controlled by Aviosys IP9212. Written by Boris Emchenko http://astromania.info";
         private static string driverDescriptionShort = "Roll-off roof on IP9212v3";
-        private static string driverVersion = "3.1.0";
+        private static string driverVersion = "3.2.0";
 
         internal static string traceStateProfileName = "Trace Level";
         internal static string traceStateDefault = "true";
@@ -127,7 +127,6 @@ namespace ASCOM.IP9212_rolloffroof3
         internal TraceLogger tl;
 
 
-        internal string TelescopeDriverId = "EQMOD_SIM.Telescope";
         internal SafetyCheck objSafetyCheck;
 
         /// <summary>
@@ -143,9 +142,10 @@ namespace ASCOM.IP9212_rolloffroof3
             #endif
 
             Hardware = new IP9212_switch_class(this);
-            objSafetyCheck = new SafetyCheck(TelescopeDriverId, this);
+            objSafetyCheck = new SafetyCheck(this);
 
             ReadProfile(); // Read device configuration from the ASCOM Profile store
+
 
             //set the correct logger state
             tl.Enabled = traceState;
@@ -960,7 +960,6 @@ namespace ASCOM.IP9212_rolloffroof3
 
                 //Advanced settings
                 #region Advanced settings
-
                 try
                 {
                     MyWebClient.NETWORK_TIMEOUT = Convert.ToInt16(p.GetValue(driverID, MyWebClient.NETWORK_TIMEOUT_profilename, string.Empty, MyWebClient.NETWORK_TIMEOUT_default.ToString()));
@@ -1008,6 +1007,30 @@ namespace ASCOM.IP9212_rolloffroof3
                 {
                     traceState = Convert.ToBoolean(traceStateDefault);
                     tl.LogMessage("readProfile", "Input string [traceState] is not a boolean value [" + e.Message + "]");
+                }
+                #endregion 
+
+                //Safety check settings
+                #region Safety check settings
+                try
+                {
+                    SafetyCheck.SafetyCheckEnabledFlag = Convert.ToBoolean(p.GetValue(driverID, SafetyCheck.SafetyCheckEnabledFlag_profilename, string.Empty, SafetyCheck.SafetyCheckEnabledFlag_default));
+                }
+                catch (Exception e)
+                {
+                    SafetyCheck.SafetyCheckEnabledFlag = Convert.ToBoolean(SafetyCheck.SafetyCheckEnabledFlag_default);
+                    tl.LogMessage("readProfile", "Wrong value for safety check flag: [" + e.Message + "]");
+                }
+
+                try
+                {
+                    SafetyCheck.TelescopeDriverId = p.GetValue(driverID, SafetyCheck.TelescopeDriverId_profilename, string.Empty, SafetyCheck.TelescopeDriverId_default);
+                }
+                catch (Exception e)
+                {
+                    //p.WriteValue(driverID, ip_login_profilename, ip_login_default);
+                    SafetyCheck.TelescopeDriverId = SafetyCheck.TelescopeDriverId_default;
+                    tl.LogMessage("readSettings", "Wrong value for safetycheck telescope driverid: [" + e.Message + "]");
                 }
                 #endregion
 

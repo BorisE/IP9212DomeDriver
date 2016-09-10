@@ -286,14 +286,17 @@ namespace ASCOM.IP9212_rolloffroof3
 
         private void btnTelescopeChoose_Click(object sender, EventArgs e)
         {
-            DomeDriverLnk.TelescopeDriverId = ASCOM.DriverAccess.Telescope.Choose(DomeDriverLnk.TelescopeDriverId);
-            txtTelescopeDriverId.Text = DomeDriverLnk.TelescopeDriverId;
+            SafetyCheck.TelescopeDriverId = ASCOM.DriverAccess.Telescope.Choose(SafetyCheck.TelescopeDriverId);
+            txtTelescopeDriverId.Text = SafetyCheck.TelescopeDriverId;
         }
 
         private void btnTelescopeSetup_Click(object sender, EventArgs e)
         {
-            driver = new ASCOM.DriverAccess.Dome(DriverId);
-            driver.SetupDialog();
+            if (DomeDriverLnk.objSafetyCheck.objTelescopeDriver == null)
+            {
+                DomeDriverLnk.objSafetyCheck.objTelescopeDriver = new ASCOM.DriverAccess.Telescope(SafetyCheck.TelescopeDriverId);
+            }
+            DomeDriverLnk.objSafetyCheck.objTelescopeDriver.SetupDialog();
 
         }
     }
